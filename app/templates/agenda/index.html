@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Agenda — Arena Palhete{% endblock %}
+
+{% block content %}
+<div class="flex flex-col gap-6 py-4">
+
+    <div class="flex items-center justify-between flex-wrap gap-2">
+        <h1 class="font-['Lexend'] text-3xl font-black text-primary">Agenda do Dia</h1>
+        <a href="{{ url_for('mensalistas.index') }}"
+           class="flex items-center gap-2 border border-tertiary px-4 py-2 rounded-lg font-['Lexend'] text-xs font-semibold text-tertiary hover:bg-zinc-100 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">group</span>
+            Mensalistas de Hoje
+        </a>
+    </div>
+
+    <!-- Seletor de data -->
+    <div class="flex bg-white p-1 rounded-xl border border-zinc-200 shadow-sm">
+        <a href="{{ url_for('agenda.index', data=data_anterior.isoformat()) }}"
+           class="flex-1 py-3 px-2 rounded-lg font-['Lexend'] text-xs font-semibold text-center text-zinc-500 hover:bg-zinc-50 transition-colors">
+            {{ data_anterior.strftime('%d/%m') }}
+        </a>
+        <div class="flex-1 py-3 px-2 rounded-lg font-['Lexend'] text-xs font-semibold text-center bg-primary-container text-white shadow-md">
+            {{ data_selecionada.strftime('%d/%m/%Y') }}
+        </div>
+        <a href="{{ url_for('agenda.index', data=data_seguinte.isoformat()) }}"
+           class="flex-1 py-3 px-2 rounded-lg font-['Lexend'] text-xs font-semibold text-center text-zinc-500 hover:bg-zinc-50 transition-colors">
+            {{ data_seguinte.strftime('%d/%m') }}
+        </a>
+    </div>
+
+    <!-- Linha do tempo -->
+    <div class="relative flex flex-col gap-2">
+        <div class="absolute left-[3.25rem] top-0 bottom-0 w-[1px] bg-zinc-200 z-0"></div>
+
+        {% for hora in range(hora_abertura, hora_fechamento + 1) %}
+            {% set reserva = namespace(obj=None) %}
+            {% for r in reservas %}
+                {% if r.hora_inicio.hour == hora %}{% set reserva.obj = r %}{% endif %}
+            {% endfor %}
+
+            <div class="flex items-start gap-4 relative z-10">
+                <span class="w-10 text-right font-['Lexend'] text-xs font-semibold text-zinc-400 mt-4">
+                    {{ '%02d:00' % hora }}
+                </span>
+
+                {% if reserva.obj %}
+                    {% if reserva.obj.status == 'em_andamento' %}
+                    <div class="flex-1 bg-primary-container text-white rounded-xl p-4 min-h-[100px] shadow-lg flex flex-col justify-between">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-['Lexend'] text-[10px] font-semibold text-white/70 uppercase tracking-tighter">EM USO</p>
+                                <h3 class="font-['Lexend'] text-lg font-semibold text-white mt-1">{{ reserva.obj.cliente.nome }}</h3>
+                                <p class="text-white/60 text-xs">{{ reserva.obj.hora_inicio.strftime('%H:%M') }} – {{ reserva.obj.hora_fim.strftime('%H:%M') }}</p>
+                            </div>
+                            <div class="bg-white/20 p-2 rounded-full">
+                                <span class="material-symbols-outlined text-white">sports_soccer</span>
+                            </div>
+                        </div>
+                        <div class="flex justify-end">
+                            <form method="POST" action="{{ url_for('agenda.encerrar', reserva_id=reserva.obj.id) }}">
+                                <button class="bg-white text-primary-container px-4 py-1.5 rounded font-['Lexend'] text-xs font-semibold hover:bg-zinc-100 transition-colors">Encerrar</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    {% elif reserva.obj.status == 'confirmada' %}
+                    <div class="flex-1 bg-amber-50 border border-amber-200 rounded-xl p-4 min-h-[80px] shadow-sm">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="font-['Lexend'] text-[10px] font-semibold text-amber-800 uppercase tracking-tighter">RESERVADO</p>
+                                <h3 class="font-['Lexend'] text-lg font-semibold text-amber-950 mt-1">{{ reserva.obj.cliente.nome }}</h3>
+                                <p class="text-amber-700 text-xs">{{ reserva.obj.hora_inicio.strftime('%H:%M') }} – {{ reserva.obj.hora_fim.strftime('%H:%M') }}</p>
+                            </div>
+                            <div class="flex flex-col gap-1 items-end">
+                                <span class="material-symbols-outlined text-amber-400">schedule</span>
+                                <form method="POST" action="{{ url_for('agenda.iniciar', reserva_id=reserva.obj.id) }}">
+                                    <button class="text-xs font-semibold text-amber-800 border border-amber-300 rounded px-2 py-1 hover:bg-amber-100 transition-colors font-['Lexend']">Iniciar</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% else %}
+                    <div class="flex-1 bg-zinc-100 border border-zinc-200 rounded-xl p-4 min-h-[70px] opacity-60">
+                        <p class="font-['Lexend'] text-[10px] font-semibold text-zinc-500 uppercase">CONCLUÍDO</p>
+                        <h3 class="font-['Lexend'] text-base font-semibold text-zinc-500 mt-1">{{ reserva.obj.cliente.nome }}</h3>
+                    </div>
+                    {% endif %}
+
+                {% else %}
+                <a href="{{ url_for('clientes.nova_reserva') }}?hora={{ '%02d:00' % hora }}&data={{ data_selecionada.isoformat() }}"
+                   class="flex-1 bg-white border-2 border-dashed border-green-200 rounded-xl p-4 flex items-center justify-between min-h-[80px] hover:border-green-400 hover:bg-green-50/30 transition-colors group">
+                    <span class="font-['Lexend'] text-xs font-semibold text-green-700 tracking-widest">LIVRE</span>
+                    <span class="material-symbols-outlined text-green-200 group-hover:text-green-400 transition-colors">add_circle</span>
+                </a>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+</div>
+
+<a href="{{ url_for('clientes.nova_reserva') }}?data={{ data_selecionada.isoformat() }}"
+   class="fixed bottom-24 right-6 bg-primary-container text-white w-14 h-14 rounded-full shadow-2xl flex items-center justify-center active:scale-90 transition-transform z-50">
+    <span class="material-symbols-outlined text-[32px]">add</span>
+</a>
+{% endblock %}
