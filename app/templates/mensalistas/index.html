@@ -2,71 +2,48 @@
 {% block title %}Mensalistas — Arena Palhete{% endblock %}
 
 {% block content %}
-<div class="py-4 flex flex-col gap-4">
-
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <h1 class="font-['Lexend'] text-2xl font-black text-primary-container">Mensalistas</h1>
-        <a href="{{ url_for('mensalistas.novo') }}"
-           class="bg-primary-container text-white px-4 py-2 rounded font-['Lexend'] text-xs font-semibold hover:bg-primary transition-colors flex items-center gap-1">
-            <span class="material-symbols-outlined text-sm">add</span>
-            Novo Mensalista
+<div class="py-4 px-4 flex flex-col gap-4 max-w-lg mx-auto">
+    
+    <div class="flex items-center justify-between mt-4">
+        <h1 class="font-['Lexend'] text-2xl font-black text-zinc-800">MENSALISTAS</h1>
+        <a href="/clientes/novo" class="bg-[#8b0000] text-white px-4 py-2 rounded-xl font-['Lexend'] text-xs font-semibold shadow-sm flex items-center gap-1">
+            <span class="material-symbols-outlined text-sm">add</span> NOVO
         </a>
     </div>
 
-    <!-- Filtros -->
-    <div class="flex gap-2 border-b border-zinc-200 pb-2 overflow-x-auto">
-        {% for f, label in [('todos','Todos'),('ativos','Ativos'),('pendentes','Pendentes')] %}
-        <a href="{{ url_for('mensalistas.index', filtro=f) }}"
-           class="px-4 py-2 font-['Lexend'] text-xs font-semibold whitespace-nowrap transition-colors
-           {% if filtro == f %}text-primary-container border-b-2 border-primary-container{% else %}text-on-surface-variant hover:text-on-surface{% endif %}">
-            {{ label }}
-        </a>
+    <div class="flex gap-4 border-b border-zinc-200 pb-2 overflow-x-auto">
+        {% for f, label in [('todos','Todos'),('ativos','Pagos'),('pendentes','Pendentes')] %}
+        <a href="/mensalistas/?filtro={{ f }}" class="font-['Lexend'] text-sm font-semibold {% if filtro == f %}text-[#8b0000] border-b-2 border-[#8b0000] pb-2{% else %}text-zinc-400{% endif %}">{{ label }}</a>
         {% endfor %}
     </div>
 
-    <!-- Lista -->
     {% if resultado %}
-    <div class="flex flex-col gap-3">
+    <div class="flex flex-col gap-4 mt-2">
         {% for item in resultado %}
         {% set c = item.contrato %}
-        {% set status = item.status_pgto %}
-        <div class="bg-white border border-zinc-200 rounded-xl p-4 flex flex-col gap-3 hover:border-outline transition-colors shadow-sm">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-3">
-                    <h3 class="font-['Lexend'] text-lg font-semibold text-on-surface">{{ c.cliente.nome }}</h3>
-                    <span class="px-2 py-1 rounded font-['Lexend'] text-xs font-semibold uppercase tracking-widest
-                        {% if status == 'pago' %}bg-status-green-bg text-status-green-text{% else %}bg-status-orange-bg text-status-orange-text{% endif %}">
-                        {{ status }}
-                    </span>
-                </div>
-            </div>
-            <div class="flex items-center gap-4 text-on-surface-variant font-['Lexend'] text-xs">
-                <div class="flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">schedule</span>
-                    Plano {{ c.plano.nome }}
-                </div>
-                <div class="flex items-center gap-1">
-                    <span class="material-symbols-outlined text-[16px]">event</span>
-                    {% set dias = ['Segundas','Terças','Quartas','Quintas','Sextas','Sábados','Domingos'] %}
-                    {{ dias[c.dia_semana] }} às {{ c.hora_inicio.strftime('%H:%M') }}
-                </div>
-                <div class="flex items-center gap-1 text-zinc-400">
-                    <span class="material-symbols-outlined text-[14px]">calendar_month</span>
-                    {{ '%02d/%04d' % (mes, ano) }}
-                </div>
-            </div>
-            <div class="flex gap-2">
-                <a href="{{ url_for('clientes.ficha', cliente_id=c.cliente_id) }}"
-                   class="flex-1 text-center border border-secondary text-secondary font-['Lexend'] text-xs font-semibold px-4 py-2 rounded hover:bg-zinc-100 transition-colors">
-                    Ver ficha
-                </a>
-                {% if status == 'pendente' %}
-                <form method="POST" action="{{ url_for('mensalistas.cobrar', contrato_id=c.id) }}" class="flex-1">
-                    <button type="submit"
-                            class="w-full bg-primary-container text-white font-['Lexend'] text-xs font-semibold px-4 py-2 rounded hover:bg-primary transition-colors">
-                        Registrar Pagamento
-                    </button>
+        <div class="bg-white border border-zinc-200 rounded-2xl p-5 shadow-sm relative overflow-hidden">
+            
+            <div class="absolute left-0 top-0 bottom-0 w-1.5 {% if item.status_pgto == 'pago' %}bg-green-500{% else %}bg-orange-400{% endif %}"></div>
+            
+            <h3 class="font-['Lexend'] text-lg font-bold text-zinc-800">
+                {% if c.cliente %}{{ c.cliente.nome }}{% else %}Cliente não encontrado{% endif %}
+            </h3>
+            <p class="text-xs text-zinc-500 font-['Lexend'] mt-1 flex items-center gap-1">
+                <span class="material-symbols-outlined text-sm">schedule</span>
+                {{ c.frequencia|upper if c.frequencia else 'MENSALISTA' }} - {{ c.hora_inicio.strftime('%H:%M') if c.hora_inicio else '--:--' }}
+            </p>
+            
+            <div class="flex gap-2 pt-4 mt-4 border-t border-zinc-100">
+                
+                {% if c.cliente_id %}
+                    <a href="/clientes/{{ c.cliente_id }}" class="flex-1 text-center border border-zinc-200 text-zinc-600 font-['Lexend'] text-xs font-bold py-3 rounded-xl hover:bg-zinc-50 transition-all">VER FICHA</a>
+                {% else %}
+                    <button disabled class="flex-1 text-center border border-zinc-100 text-zinc-300 font-['Lexend'] text-xs font-bold py-3 rounded-xl cursor-not-allowed">FICHA INDISPONÍVEL</button>
+                {% endif %}
+                
+                {% if item.status_pgto == 'pendente' %}
+                <form method="POST" action="/mensalistas/cobrar/{{ c.id }}" class="flex-[1.5]">
+                    <button type="submit" class="w-full bg-zinc-800 text-white font-['Lexend'] text-xs font-bold py-3 rounded-xl hover:bg-black transition-all">BAIXA PAGAMENTO</button>
                 </form>
                 {% endif %}
             </div>
@@ -74,9 +51,9 @@
         {% endfor %}
     </div>
     {% else %}
-    <div class="bg-white border border-dashed border-zinc-200 rounded-xl p-10 text-center mt-4">
-        <span class="material-symbols-outlined text-zinc-300 text-[52px]">group</span>
-        <p class="font-['Lexend'] text-sm text-zinc-400 mt-2">Nenhum mensalista encontrado.</p>
+    <div class="flex flex-col items-center justify-center py-20 text-zinc-400 gap-4">
+        <span class="material-symbols-outlined text-6xl">group_off</span>
+        <p class="font-['Lexend'] text-sm">Nenhum mensalista encontrado.</p>
     </div>
     {% endif %}
 </div>

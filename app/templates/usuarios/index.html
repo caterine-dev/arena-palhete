@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Equipe — Arena Palhete{% endblock %}
+
+{% block header %}
+<header class="bg-white flex items-center justify-between w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200">
+    <div class="flex items-center gap-3">
+        <a href="/ajustes/" class="text-[#8b0000] p-2 hover:bg-zinc-100 rounded-lg transition-colors">
+            <span class="material-symbols-outlined">arrow_back</span>
+        </a>
+        <h1 class="font-['Lexend'] text-xl font-bold text-[#8b0000] uppercase tracking-tight">Equipe</h1>
+    </div>
+    <a href="{{ url_for('usuarios.novo') }}" class="bg-[#8b0000] text-white p-2 rounded-lg flex items-center shadow-sm hover:bg-red-800">
+        <span class="material-symbols-outlined text-xl">person_add</span>
+    </a>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="pt-6 pb-28 px-4 max-w-lg mx-auto mt-16">
+    <div class="flex flex-col gap-3">
+        {% for u in usuarios %}
+        <div class="bg-white rounded-xl p-4 border border-zinc-200 shadow-sm flex items-center justify-between transition-all {% if not u.ativo %}opacity-50 grayscale{% endif %}">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-zinc-100 text-[#8b0000] flex items-center justify-center font-black font-['Lexend'] text-lg border border-zinc-200">
+                    {{ u.nome[:1]|upper }}
+                </div>
+                <div>
+                    <h3 class="font-['Lexend'] text-sm font-bold text-zinc-800">{{ u.nome }}</h3>
+                    <p class="text-xs text-zinc-500 font-['Lexend'] mt-0.5">{{ u.email }} • <span class="uppercase font-bold text-[#8b0000]">{{ u.perfil }}</span></p>
+                </div>
+            </div>
+            
+            {% if u.id != current_user.id %}
+            <form action="{{ url_for('usuarios.toggle_status', usuario_id=u.id) }}" method="POST">
+                <button type="submit" class="p-2 rounded-lg transition-colors {% if u.ativo %}text-red-500 hover:bg-red-50 border border-red-100{% else %}text-green-600 hover:bg-green-50 border border-green-200{% endif %}" title="{% if u.ativo %}Desativar Acesso{% else %}Ativar Acesso{% endif %}">
+                    <span class="material-symbols-outlined text-xl">{% if u.ativo %}block{% else %}check_circle{% endif %}</span>
+                </button>
+            </form>
+            {% else %}
+            <span class="text-[9px] bg-zinc-100 text-zinc-400 px-2 py-1 rounded font-bold uppercase tracking-widest border border-zinc-200">Você</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

@@ -25,6 +25,13 @@ def seed():
             db.session.add(func)
             print("✅ Usuário funcionário criado.")
 
+        # Criação do usuário Admin adicional (solicitado)
+        if not Usuario.query.filter_by(email='admin@palhete.com').first():
+            admin = Usuario(nome='Gerente Palhete', email='admin@palhete.com', perfil='gerente')
+            admin.set_senha('123456')
+            db.session.add(admin)
+            print("✅ Usuário admin criado.")
+
         # Planos mensalistas
         planos = [
             ('1h',   60,  600.0),
@@ -51,6 +58,7 @@ def seed():
         print("\n🏟️  Arena Palhete pronto para uso!")
         print("   Gerente:     gerente@arenapalhete.com / palhete2026")
         print("   Funcionário: funcionario@arenapalhete.com / campo2026")
+        print("   Admin:       admin@palhete.com / 123456")
 
 
 if __name__ == '__main__':

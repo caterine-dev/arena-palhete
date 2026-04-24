@@ -3,256 +3,213 @@
 
 {% block header %}
 <header class="bg-white flex items-center w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200 gap-4">
-    <a href="{{ url_for('agenda.index') }}" class="text-primary p-2 hover:bg-zinc-100 rounded-lg transition-colors">
+    <a href="javascript:history.back()" class="text-[#8b0000] p-2 hover:bg-zinc-100 rounded-lg transition-colors">
         <span class="material-symbols-outlined">arrow_back</span>
     </a>
-    <h1 class="font-['Lexend'] text-lg font-bold text-primary-container">Nova Reserva</h1>
+    <h1 class="font-['Lexend'] text-lg font-bold text-[#8b0000]">Nova Reserva</h1>
 </header>
 {% endblock %}
 
 {% block content %}
-<div class="py-4 max-w-lg mx-auto">
-    <form method="POST" id="form-reserva" class="flex flex-col gap-6">
-
-        <!-- Cliente -->
+<div class="py-4 max-w-lg mx-auto px-4 mt-16">
+    <form method="POST" class="flex flex-col gap-6">
+        
         <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-lg font-semibold text-on-surface flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-primary-container">person</span>
-                Cliente
-            </h2>
-
-            <div class="relative mb-3">
-                <span class="material-symbols-outlined absolute left-3 top-3 text-zinc-400 text-[18px]">search</span>
-                <input id="busca-cliente" type="text" placeholder="Buscar por nome ou telefone"
-                       class="w-full pl-10 pr-4 py-3 border border-zinc-200 rounded-lg font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"
-                       autocomplete="off"/>
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="font-['Lexend'] text-base font-bold text-[#8b0000] flex items-center gap-2">
+                    <span class="material-symbols-outlined text-[20px]">person</span> Cliente
+                </h2>
+                <a href="{{ url_for('clientes.novo') }}" class="text-xs font-['Lexend'] font-bold text-[#8b0000] hover:underline flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">person_add</span> Cadastrar Novo
+                </a>
             </div>
 
-            <!-- Resultados da busca -->
-            <div id="resultados-busca" class="hidden flex-col gap-2 mb-3"></div>
-
-            <!-- Cliente selecionado -->
-            <div id="cliente-selecionado" class="{% if not cliente %}hidden{% endif %}">
-                <div class="flex items-center gap-3 border-2 border-primary-container rounded-xl p-3 bg-red-50/30">
-                    <div class="bg-primary-container w-9 h-9 rounded-lg flex items-center justify-center">
-                        <span class="material-symbols-outlined text-white text-[18px]">person</span>
+            <div class="flex flex-col gap-1 relative">
+                <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Buscar Cliente</label>
+                
+                {% if cliente %}
+                    <input type="hidden" name="cliente_id" value="{{ cliente.id }}">
+                    <div class="flex items-center justify-between w-full border border-zinc-300 bg-zinc-50 rounded-lg px-3 py-3">
+                        <span class="font-['Lexend'] text-sm font-semibold text-zinc-800">{{ cliente.nome }}</span>
+                        <a href="{{ url_for('clientes.nova_reserva', data=request.args.get('data', hoje)) }}" class="text-zinc-400 hover:text-red-600 transition-colors">
+                            <span class="material-symbols-outlined text-[18px]">close</span>
+                        </a>
                     </div>
-                    <div class="flex-1">
-                        <p id="nome-cliente-display" class="font-['Lexend'] text-sm font-semibold text-on-surface">
-                            {% if cliente %}{{ cliente.nome }}{% endif %}
-                        </p>
-                        <p id="tel-cliente-display" class="font-['Lexend'] text-xs text-on-surface-variant">
-                            {% if cliente %}{{ cliente.telefone }}{% endif %}
-                        </p>
-                    </div>
-                    <button type="button" onclick="limparCliente()"
-                            class="text-zinc-400 hover:text-zinc-600 transition-colors">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
-                </div>
+                {% else %}
+                    <input type="hidden" name="cliente_id" id="cliente_id_input" required>
+                    <input type="text" id="busca_cliente" placeholder="Digite o nome ou telefone..." autocomplete="off" class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none"/>
+                    
+                    <ul id="lista_clientes" class="absolute top-[65px] left-0 right-0 bg-white border border-zinc-200 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50 hidden">
+                    </ul>
+                    <p class="text-[10px] text-zinc-400 font-['Lexend'] mt-1" id="cliente_selecionado_msg">Nenhum cliente selecionado.</p>
+                {% endif %}
             </div>
-
-            <input type="hidden" name="cliente_id" id="cliente_id" value="{{ cliente.id if cliente else '' }}" required/>
-
-            <a href="{{ url_for('clientes.novo') }}?next={{ request.url }}"
-               class="flex items-center gap-1 text-primary-container font-['Lexend'] text-xs font-semibold mt-3 hover:underline">
-                <span class="material-symbols-outlined text-[16px]">add_circle</span>
-                Cadastrar novo cliente
-            </a>
         </div>
 
-        <!-- Horário -->
         <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-lg font-semibold text-on-surface flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-primary-container">schedule</span>
-                Horário
+            <h2 class="font-['Lexend'] text-base font-bold text-[#8b0000] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">schedule</span> Horário
             </h2>
-
             <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Data da Reserva</label>
-                    <input type="date" name="data" id="data-reserva"
-                           value="{{ request.args.get('data', hoje.isoformat()) }}"
-                           min="{{ hoje.isoformat() }}"
-                           class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"
-                           required/>
+                    <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Data da Reserva</label>
+                    <input type="date" name="data" value="{{ request.args.get('data', hoje) }}" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none"/>
                 </div>
-                <div class="flex gap-3">
+                
+                <div class="flex gap-4">
                     <div class="flex-1 flex flex-col gap-1">
-                        <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Início</label>
-                        <input type="time" name="hora_inicio" id="hora-inicio"
-                               value="{{ request.args.get('hora', '08:00') }}"
-                               class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"
-                               required/>
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Início</label>
+                        <input type="time" name="hora_inicio" id="hora_inicio" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none" onchange="calcularValorInteligente()"/>
                     </div>
                     <div class="flex-1 flex flex-col gap-1">
-                        <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Fim</label>
-                        <input type="time" name="hora_fim" id="hora-fim"
-                               class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"
-                               required/>
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Fim</label>
+                        <input type="time" name="hora_fim" id="hora_fim" required class="w-full border border-[#8b0000] rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none" onchange="calcularValorInteligente()"/>
                     </div>
-                </div>
-                <div id="aviso-conflito" class="hidden bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-red-800 font-['Lexend'] text-xs flex items-center gap-2">
-                    <span class="material-symbols-outlined text-[16px]">warning</span>
-                    <span id="msg-conflito">Horário já reservado.</span>
                 </div>
             </div>
         </div>
 
-        <!-- Pagamento -->
         <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-lg font-semibold text-on-surface flex items-center gap-2 mb-4">
-                <span class="material-symbols-outlined text-primary-container">payments</span>
-                Pagamento
+            <h2 class="font-['Lexend'] text-base font-bold text-[#8b0000] mb-4 flex items-center gap-2">
+                <span class="material-symbols-outlined text-[20px]">payments</span> Pagamento
             </h2>
-
             <div class="flex flex-col gap-4">
                 <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Valor Cobrado</label>
-                    <div class="flex items-center border border-zinc-200 rounded-lg px-3 py-3 focus-within:border-primary-container transition-colors">
-                        <span class="font-['Lexend'] text-sm text-zinc-500 mr-1">R$</span>
-                        <input type="number" name="valor" id="valor" step="0.01" min="0"
-                               class="flex-1 font-['Lexend'] text-xl font-semibold text-on-surface focus:outline-none bg-transparent"
-                               placeholder="0,00" required/>
+                    <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Valor Cobrado</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 font-['Lexend'] text-sm">R$</span>
+                        <input type="text" name="valor" id="valor_cobrado" required class="w-full border border-zinc-300 rounded-lg pl-9 pr-3 py-3 font-['Lexend'] text-lg font-bold text-[#8b0000] focus:border-[#8b0000] focus:outline-none"/>
                     </div>
+                </div>
+                
+                <div class="flex flex-col gap-1">
+                    <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Forma de Pagamento</label>
+                    <select name="forma_pagamento" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none">
+                        <option value="pix">PIX</option>
+                        <option value="cartao_credito">Cartão de Crédito</option>
+                        <option value="cartao_debito">Cartão de Débito</option>
+                        <option value="dinheiro">Dinheiro</option>
+                    </select>
                 </div>
 
                 <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Forma de Pagamento</label>
-                    <div class="flex flex-col gap-2">
-                        {% for forma, label, icone in [('pix','Pix','currency_exchange'),('dinheiro','Dinheiro','payments'),('cartao','Cartão','credit_card')] %}
-                        <label class="flex items-center gap-3 border border-zinc-200 rounded-xl p-3 cursor-pointer hover:border-primary-container transition-colors has-[:checked]:border-primary-container has-[:checked]:bg-red-50/30">
-                            <input type="radio" name="forma_pagamento" value="{{ forma }}"
-                                   class="text-primary-container focus:ring-primary-container" {% if forma == 'pix' %}checked{% endif %}/>
-                            <span class="material-symbols-outlined text-zinc-500 text-[20px]">{{ icone }}</span>
-                            <span class="font-['Lexend'] text-sm font-medium text-on-surface">{{ label }}</span>
-                        </label>
-                        {% endfor %}
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Status</label>
-                    <div class="flex flex-col gap-2">
-                        <label class="flex items-center gap-3 border border-zinc-200 rounded-xl p-3 cursor-pointer hover:border-primary-container transition-colors has-[:checked]:border-primary-container has-[:checked]:bg-red-50/30">
-                            <input type="radio" name="status_pagamento" value="pendente"
-                                   class="text-primary-container focus:ring-primary-container"/>
-                            <span class="w-2.5 h-2.5 rounded-full bg-orange-400"></span>
-                            <span class="font-['Lexend'] text-sm font-medium text-on-surface">Pendente</span>
-                        </label>
-                        <label class="flex items-center gap-3 border border-zinc-200 rounded-xl p-3 cursor-pointer hover:border-primary-container transition-colors has-[:checked]:border-primary-container has-[:checked]:bg-red-50/30">
-                            <input type="radio" name="status_pagamento" value="pago" checked
-                                   class="text-primary-container focus:ring-primary-container"/>
-                            <span class="w-2.5 h-2.5 rounded-full bg-green-500"></span>
-                            <span class="font-['Lexend'] text-sm font-medium text-on-surface">Pago</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Observações (opcional)</label>
-                    <textarea name="observacoes" rows="2"
-                              class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors resize-none"
-                              placeholder="Ex.: Pelada dos amigos, trazer colete..."></textarea>
+                    <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Status do Pagamento</label>
+                    <select name="status_pagamento" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none">
+                        <option value="pago">Pago Agora</option>
+                        <option value="pendente">Pendente (Pagar depois)</option>
+                    </select>
                 </div>
             </div>
         </div>
 
-        <button type="submit" id="btn-confirmar"
-                class="w-full bg-primary-container text-white py-4 rounded-xl font-['Lexend'] font-semibold text-base flex items-center justify-center gap-2 hover:bg-primary transition-colors active:scale-[0.98]">
-            <span class="material-symbols-outlined">check_circle</span>
-            Confirmar Reserva
+        <button type="submit" class="w-full bg-[#8b0000] text-white py-4 mb-10 rounded-xl font-['Lexend'] font-bold text-sm hover:bg-red-800 transition-colors shadow-sm">
+            CONFIRMAR RESERVA
         </button>
     </form>
 </div>
-{% endblock %}
 
-{% block extra_scripts %}
 <script>
-    const VALOR_HORA = 150.0; // TODO: puxar de configurações
+    // 1. LÓGICA DA BUSCA DE CLIENTES (RESTAURADA)
+    const inputBusca = document.getElementById('busca_cliente');
+    const listaClientes = document.getElementById('lista_clientes');
+    const inputHiddenId = document.getElementById('cliente_id_input');
+    const msgSelecionado = document.getElementById('cliente_selecionado_msg');
 
-    // Busca de clientes
-    const inputBusca = document.getElementById('busca-cliente');
-    const divResultados = document.getElementById('resultados-busca');
-    const divSelecionado = document.getElementById('cliente-selecionado');
-    let timeoutBusca;
-
-    inputBusca.addEventListener('input', () => {
-        clearTimeout(timeoutBusca);
-        const q = inputBusca.value.trim();
-        if (q.length < 2) { divResultados.classList.add('hidden'); return; }
-        timeoutBusca = setTimeout(async () => {
-            const res = await fetch(`/clientes/buscar?q=${encodeURIComponent(q)}`);
-            const clientes = await res.json();
-            divResultados.innerHTML = '';
-            if (clientes.length === 0) {
-                divResultados.innerHTML = '<p class="text-xs text-zinc-400 font-[\'Lexend\'] px-1">Nenhum cliente encontrado.</p>';
+    if (inputBusca) {
+        let timeout = null;
+        inputBusca.addEventListener('input', function() {
+            clearTimeout(timeout);
+            const q = this.value.trim();
+            
+            if (q.length < 2) {
+                listaClientes.classList.add('hidden');
+                return;
             }
-            clientes.forEach(c => {
-                const el = document.createElement('div');
-                el.className = 'flex items-center gap-3 p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-primary-container hover:bg-red-50/20 transition-colors';
-                el.innerHTML = `<div class="bg-zinc-100 w-8 h-8 rounded-lg flex items-center justify-center"><span class="material-symbols-outlined text-zinc-500 text-[16px]">person</span></div><div><p class="font-['Lexend'] text-sm font-semibold">${c.nome}</p><p class="font-['Lexend'] text-xs text-zinc-500">${c.telefone}</p></div>`;
-                el.onclick = () => selecionarCliente(c);
-                divResultados.appendChild(el);
-            });
-            divResultados.classList.remove('hidden');
-            divResultados.classList.add('flex');
-        }, 300);
-    });
 
-    function selecionarCliente(c) {
-        document.getElementById('cliente_id').value = c.id;
-        document.getElementById('nome-cliente-display').textContent = c.nome;
-        document.getElementById('tel-cliente-display').textContent = c.telefone;
-        divSelecionado.classList.remove('hidden');
-        divResultados.classList.add('hidden');
-        inputBusca.value = '';
+            timeout = setTimeout(() => {
+                fetch(`/clientes/buscar?q=${q}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        listaClientes.innerHTML = '';
+                        if (data.length === 0) {
+                            listaClientes.innerHTML = '<li class="p-3 text-sm text-zinc-500 font-[\'Lexend\']">Nenhum cliente encontrado.</li>';
+                        } else {
+                            data.forEach(c => {
+                                const li = document.createElement('li');
+                                li.className = 'p-3 hover:bg-zinc-50 cursor-pointer border-b border-zinc-100 last:border-0 font-[\'Lexend\'] text-sm flex justify-between items-center';
+                                li.innerHTML = `<span class="font-semibold text-zinc-800">${c.nome}</span> <span class="text-xs text-zinc-500">${c.telefone}</span>`;
+                                li.onclick = () => {
+                                    inputBusca.value = c.nome;
+                                    inputHiddenId.value = c.id;
+                                    listaClientes.classList.add('hidden');
+                                    msgSelecionado.innerHTML = `<span class="text-green-600 font-semibold flex items-center gap-1"><span class="material-symbols-outlined text-[14px]">check_circle</span> Cliente selecionado: ${c.nome}</span>`;
+                                    msgSelecionado.classList.remove('text-zinc-400');
+                                    
+                                    // Remove o aviso de campo inválido se tiver
+                                    inputBusca.setCustomValidity(''); 
+                                };
+                                listaClientes.appendChild(li);
+                            });
+                        }
+                        listaClientes.classList.remove('hidden');
+                    });
+            }, 300);
+        });
+
+        // Trava para o funcionário não enviar o form sem selecionar na lista
+        inputBusca.addEventListener('change', () => {
+            if (!inputHiddenId.value) {
+                inputBusca.setCustomValidity('Por favor, selecione um cliente da lista.');
+            }
+        });
+
+        // Esconder lista ao clicar fora
+        document.addEventListener('click', function(e) {
+            if (e.target !== inputBusca && e.target !== listaClientes) {
+                listaClientes.classList.add('hidden');
+            }
+        });
     }
 
-    function limparCliente() {
-        document.getElementById('cliente_id').value = '';
-        divSelecionado.classList.add('hidden');
-    }
-
-    // Cálculo automático de valor
-    function calcularValor() {
-        const inicio = document.getElementById('hora-inicio').value;
-        const fim = document.getElementById('hora-fim').value;
+    // 2. LÓGICA DE ESCADINHA PARA CÁLCULO DE VALOR (MANTIDA)
+    function calcularValorInteligente() {
+        const inicio = document.getElementById('hora_inicio').value;
+        const fim = document.getElementById('hora_fim').value;
+        
         if (!inicio || !fim) return;
-        const [hi, mi] = inicio.split(':').map(Number);
-        const [hf, mf] = fim.split(':').map(Number);
-        const minutos = (hf * 60 + mf) - (hi * 60 + mi);
-        if (minutos > 0) {
-            document.getElementById('valor').value = ((minutos / 60) * VALOR_HORA).toFixed(2);
-        }
-    }
 
-    document.getElementById('hora-inicio').addEventListener('change', calcularValor);
-    document.getElementById('hora-fim').addEventListener('change', calcularValor);
+        const [h1, m1] = inicio.split(':').map(Number);
+        const [h2, m2] = fim.split(':').map(Number);
 
-    // Verificar disponibilidade
-    async function verificarDisponibilidade() {
-        const data = document.getElementById('data-reserva').value;
-        const inicio = document.getElementById('hora-inicio').value;
-        const fim = document.getElementById('hora-fim').value;
-        if (!data || !inicio || !fim) return;
-        const res = await fetch(`/agenda/verificar-disponibilidade?data=${data}&inicio=${inicio}&fim=${fim}`);
-        const json = await res.json();
-        const aviso = document.getElementById('aviso-conflito');
-        const btn = document.getElementById('btn-confirmar');
-        if (!json.disponivel) {
-            aviso.classList.remove('hidden');
-            btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        let minutos = (h2 * 60 + m2) - (h1 * 60 + m1);
+        
+        if (minutos < 0) minutos += 24 * 60;
+
+        const val1h = parseFloat("{{ configs.valor_1h }}");
+        const val1h30 = parseFloat("{{ configs.valor_1h30 }}");
+        const val2h = parseFloat("{{ configs.valor_2h }}");
+
+        let valorCalculado = 0;
+
+        if (minutos <= 60) {
+            valorCalculado = val1h;
+        } else if (minutos <= 90) {
+            valorCalculado = val1h30;
+        } else if (minutos <= 120) {
+            valorCalculado = val2h;
         } else {
-            aviso.classList.add('hidden');
-            btn.disabled = false;
-            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+            const tempoExtra = minutos - 120;
+            const valorExtra = (tempoExtra / 60) * val1h;
+            valorCalculado = val2h + valorExtra;
         }
+
+        document.getElementById('valor_cobrado').value = valorCalculado.toFixed(2).replace('.', ',');
     }
 
-    document.getElementById('data-reserva').addEventListener('change', verificarDisponibilidade);
-    document.getElementById('hora-inicio').addEventListener('change', verificarDisponibilidade);
-    document.getElementById('hora-fim').addEventListener('change', verificarDisponibilidade);
+    window.addEventListener('DOMContentLoaded', () => {
+        if (document.getElementById('hora_inicio').value && document.getElementById('hora_fim').value) {
+            calcularValorInteligente();
+        }
+    });
 </script>
 {% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Ajustes — Arena Palhete{% endblock %}
+
+{% block header %}
+<header class="bg-white flex items-center justify-between w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200">
+    <div class="flex items-center gap-3">
+        <span class="material-symbols-outlined text-primary-container text-3xl">settings</span>
+        <h1 class="font-['Lexend'] text-xl font-bold text-primary-container uppercase tracking-tight">Ajustes</h1>
+    </div>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="pt-6 pb-28 px-4 max-w-lg mx-auto mt-16">
+    <div class="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+        <h2 class="font-['Lexend'] text-lg font-bold text-zinc-800 mb-6 flex items-center gap-2">
+            <span class="material-symbols-outlined text-zinc-400">tune</span>
+            Configurações do Sistema
+        </h2>
+
+        <form method="POST" class="flex flex-col gap-5">
+
+            <div class="flex flex-col gap-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                <h3 class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">schedule</span> Funcionamento
+                </h3>
+                <div class="flex gap-4">
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">Abre às (Hora)</label>
+                        <input type="number" name="hora_abertura" value="{{ configs.hora_abertura }}" min="0" max="23" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">Fecha às (Hora)</label>
+                        <input type="number" name="hora_fechamento" value="{{ configs.hora_fechamento }}" min="0" max="23" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                <h3 class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">payments</span> Valores Avulsos (R$)
+                </h3>
+                <div class="flex gap-3">
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">1 Hora</label>
+                        <input type="text" name="valor_avulso_1h" value="{{ configs.valor_avulso_1h }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">1h 30min</label>
+                        <input type="text" name="valor_avulso_1h30" value="{{ configs.valor_avulso_1h30 }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">2 Horas</label>
+                        <input type="text" name="valor_avulso_2h" value="{{ configs.valor_avulso_2h }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                <h3 class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase tracking-widest flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">stars</span> Valores Mensalistas (R$)
+                </h3>
+                <div class="flex gap-3">
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">Plano 1h</label>
+                        <input type="text" name="valor_mensal_1h" value="{{ planos.get('1h', '600.00') }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">Plano 1h30</label>
+                        <input type="text" name="valor_mensal_1h30" value="{{ planos.get('1h30', '700.00') }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase">Plano 2h</label>
+                        <input type="text" name="valor_mensal_2h" value="{{ planos.get('2h', '800.00') }}" required
+                               class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container focus:outline-none"/>
+                    </div>
+                </div>
+                <p class="text-[10px] text-zinc-400 font-['Lexend'] mt-1">Isso afetará os próximos pagamentos de todos os planos cadastrados.</p>
+            </div>
+
+            <button type="submit" class="w-full bg-[#8b0000] text-white py-4 mt-2 rounded-xl font-['Lexend'] text-sm font-bold hover:bg-red-800 transition-all shadow-sm flex items-center justify-center gap-2">
+                <span class="material-symbols-outlined text-lg">save</span>
+                SALVAR CONFIGURAÇÕES
+            </button>
+        </form>
+    </div>
+    
+    <div class="mt-8 mb-4 p-4 bg-zinc-50 rounded-xl border border-zinc-200 flex items-center justify-between shadow-sm">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-zinc-500 text-2xl">shield_person</span>
+            <div>
+                <h3 class="font-['Lexend'] text-sm font-bold text-zinc-800">Equipe e Acessos</h3>
+                <p class="text-[10px] text-zinc-500 font-['Lexend']">Cadastre novos funcionários</p>
+            </div>
+        </div>
+        <a href="/usuarios/" class="bg-zinc-800 text-white px-4 py-2 rounded-lg font-['Lexend'] text-xs font-bold hover:bg-black transition-colors">
+            GERENCIAR
+        </a>
+    </div>
+
+    <div class="mt-8 flex justify-center">
+         <a href="/logout" class="flex items-center gap-2 text-red-500 hover:text-red-700 font-['Lexend'] text-sm font-bold transition-colors">
+             <span class="material-symbols-outlined text-[18px]">logout</span>
+             Sair do Sistema
+         </a>
+    </div>
+</div>
+{% endblock %}

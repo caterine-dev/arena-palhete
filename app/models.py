@@ -1,10 +1,9 @@
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 
 db = SQLAlchemy()
-
 
 class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
@@ -12,7 +11,7 @@ class Usuario(UserMixin, db.Model):
     nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     senha_hash = db.Column(db.String(256), nullable=False)
-    perfil = db.Column(db.String(20), nullable=False, default='funcionario')  # 'gerente' ou 'funcionario'
+    perfil = db.Column(db.String(20), nullable=False, default='funcionario')
     ativo = db.Column(db.Boolean, default=True)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
@@ -31,7 +30,7 @@ class Cliente(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nome = db.Column(db.String(100), nullable=False)
     telefone = db.Column(db.String(20), nullable=False)
-    tipo = db.Column(db.String(20), nullable=False, default='avulso')  # 'avulso' ou 'mensalista'
+    tipo = db.Column(db.String(20), nullable=False, default='avulso')  
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     reservas = db.relationship('Reserva', backref='cliente', lazy=True)
@@ -50,8 +49,8 @@ class Cliente(db.Model):
 class PlanoMensalista(db.Model):
     __tablename__ = 'planos_mensalista'
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(20), nullable=False)        # ex: '1h', '1h30', '2h'
-    duracao_minutos = db.Column(db.Integer, nullable=False) # 60, 90, 120
+    nome = db.Column(db.String(20), nullable=False)        
+    duracao_minutos = db.Column(db.Integer, nullable=False) 
     valor_mensal = db.Column(db.Float, nullable=False)
 
     contratos = db.relationship('ContratoMensalista', backref='plano', lazy=True)
@@ -62,11 +61,14 @@ class ContratoMensalista(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     plano_id = db.Column(db.Integer, db.ForeignKey('planos_mensalista.id'), nullable=False)
-    dia_semana = db.Column(db.Integer, nullable=False)  # 0=segunda ... 6=domingo
+    
+    frequencia = db.Column(db.String(20), nullable=False, default='mensalista') 
+    dia_semana = db.Column(db.Integer, nullable=False)  
     hora_inicio = db.Column(db.Time, nullable=False)
+    hora_fim = db.Column(db.Time, nullable=False) 
     data_inicio = db.Column(db.Date, nullable=False, default=date.today)
     data_fim = db.Column(db.Date, nullable=True)
-    status = db.Column(db.String(20), default='ativo')  # 'ativo' ou 'inativo'
+    status = db.Column(db.String(20), default='ativo')  
 
     pagamentos = db.relationship('Pagamento', backref='contrato', lazy=True)
 
@@ -85,17 +87,21 @@ class Reserva(db.Model):
     data = db.Column(db.Date, nullable=False)
     hora_inicio = db.Column(db.Time, nullable=False)
     hora_fim = db.Column(db.Time, nullable=False)
-    tipo = db.Column(db.String(20), nullable=False, default='avulso')  # 'avulso' ou 'mensalista'
-    status = db.Column(db.String(20), default='confirmada')  # 'confirmada', 'em_andamento', 'concluida', 'cancelada'
+    tipo = db.Column(db.String(20), nullable=False, default='avulso')  
+    status = db.Column(db.String(20), default='confirmada')  
     observacoes = db.Column(db.Text, nullable=True)
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
     pagamento = db.relationship('Pagamento', backref='reserva', uselist=False, lazy=True)
 
     def duracao_minutos(self):
-        inicio = datetime.combine(date.today(), self.hora_inicio)
-        fim = datetime.combine(date.today(), self.hora_fim)
-        return int((fim - inicio).total_seconds() / 60)
+        ini = self.hora_inicio.hour * 60 + self.hora_inicio.minute
+        fim = self.hora_fim.hour * 60 + self.hora_fim.minute
+        minutos = fim - ini
+        # Se virar a meia-noite (ex: 23h as 01h), corrige o valor negativo
+        if minutos < 0:
+            minutos += 24 * 60
+        return minutos
 
 
 class Pagamento(db.Model):
@@ -104,11 +110,11 @@ class Pagamento(db.Model):
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=False)
     reserva_id = db.Column(db.Integer, db.ForeignKey('reservas.id'), nullable=True)
     contrato_id = db.Column(db.Integer, db.ForeignKey('contratos_mensalista.id'), nullable=True)
-    tipo = db.Column(db.String(20), nullable=False)         # 'avulso' ou 'mensalidade'
+    tipo = db.Column(db.String(20), nullable=False)         
     valor = db.Column(db.Float, nullable=False)
-    forma = db.Column(db.String(20), nullable=False)        # 'dinheiro', 'pix', 'cartao'
-    status = db.Column(db.String(20), default='pago')       # 'pago' ou 'pendente'
-    mes_referencia = db.Column(db.String(7), nullable=True) # ex: '2026-04' (para mensalistas)
+    forma = db.Column(db.String(20), nullable=False)        
+    status = db.Column(db.String(20), default='pago')       
+    mes_referencia = db.Column(db.String(7), nullable=True) 
     criado_em = db.Column(db.DateTime, default=datetime.utcnow)
 
 
@@ -117,18 +123,21 @@ class Configuracao(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     chave = db.Column(db.String(50), unique=True, nullable=False)
     valor = db.Column(db.String(200), nullable=False)
+    descricao = db.Column(db.String(200), nullable=True)
 
     @staticmethod
-    def get(chave, padrao=None):
-        c = Configuracao.query.filter_by(chave=chave).first()
-        return c.valor if c else padrao
+    def get(chave, default=None):
+        conf = Configuracao.query.filter_by(chave=chave).first()
+        return conf.valor if conf else default
 
     @staticmethod
-    def set(chave, valor):
-        c = Configuracao.query.filter_by(chave=chave).first()
-        if c:
-            c.valor = valor
+    def set(chave, valor, descricao=None):
+        conf = Configuracao.query.filter_by(chave=chave).first()
+        if conf:
+            conf.valor = str(valor)
+            if descricao:
+                conf.descricao = descricao
         else:
-            c = Configuracao(chave=chave, valor=valor)
-            db.session.add(c)
+            conf = Configuracao(chave=chave, valor=str(valor), descricao=descricao)
+            db.session.add(conf)
         db.session.commit()

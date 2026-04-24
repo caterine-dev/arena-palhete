@@ -1,5 +1,4 @@
-.env
-instance/
+venv/
 __pycache__/
-*.pyc
-.venv/
+instance/
+credenciais_google.json

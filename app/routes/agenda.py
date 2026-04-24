@@ -1,92 +1,84 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required
-from app.models import db, Reserva, ContratoMensalista, Cliente
-from datetime import datetime, time
+from app.models import db, Reserva, ContratoMensalista, Cliente, Configuracao
+from datetime import datetime, time, timedelta
 
-bp = Blueprint('agenda', __name__, url_prefix='/agenda')
+agenda_bp = Blueprint('agenda', __name__, url_prefix='/agenda')
 
-def verificar_conflito(data_reserva, hora_inicio, hora_fim):
-    """
-    Retorna True se houver conflito, False se o horário estiver livre.
-    """
-    # 1. Verificar conflito com outras reservas (avulsas ou mensalistas já lançadas)
-    conflito_reserva = Reserva.query.filter(
-        Reserva.data == data_reserva,
-        Reserva.status != 'cancelada',
-        Reserva.hora_inicio < hora_fim,
-        Reserva.hora_fim > hora_inicio
-    ).first()
-    
-    if conflito_reserva:
-        return True, f"Já existe uma reserva para este horário ({conflito_reserva.cliente.nome})."
-
-    # 2. Verificar conflito com Contratos de Mensalistas (horários fixos)
-    dia_semana = data_reserva.weekday() # 0=Segunda, 1=Terça...
-    conflito_contrato = ContratoMensalista.query.filter(
-        ContratoMensalista.dia_semana == dia_semana,
-        ContratoMensalista.status == 'ativo',
-        ContratoMensalista.hora_inicio < hora_fim,
-        ContratoMensalista.hora_fim > hora_inicio
-    ).first()
-
-    if conflito_contrato:
-        return True, f"Este horário é reservado para o mensalista {conflito_contrato.cliente.nome}."
-
-    return False, ""
-
-@bp.route('/')
+@agenda_bp.route('/')
 @login_required
 def index():
     data_str = request.args.get('data', datetime.now().strftime('%Y-%m-%d'))
     data_selecionada = datetime.strptime(data_str, '%Y-%m-%d').date()
     
-    # Busca reservas do dia para exibir no grid
-    reservas = Reserva.query.filter_by(data=data_selecionada).order_by(Reserva.hora_inicio).all()
+    # Variáveis de navegação blindadas
+    data_anterior = (data_selecionada - timedelta(days=1)).strftime('%Y-%m-%d')
+    data_seguinte = (data_selecionada + timedelta(days=1)).strftime('%Y-%m-%d')
+    
+    # Puxa o horário de funcionamento real do painel de Ajustes!
+    hora_abertura = int(Configuracao.get('hora_abertura', '8'))
+    hora_fechamento = int(Configuracao.get('hora_fechamento', '23'))
+    
+    # Busca as reservas do dia
+    reservas = Reserva.query.filter_by(data=data_selecionada).filter(Reserva.status != 'cancelada').all()
     
     return render_template('agenda/index.html', 
                            reservas=reservas, 
-                           data_selecionada=data_selecionada)
+                           data_selecionada=data_selecionada,
+                           data_anterior=data_anterior,
+                           data_seguinte=data_seguinte,
+                           hora_abertura=hora_abertura,
+                           hora_fechamento=hora_fechamento)
 
-@bp.route('/nova', methods=['GET', 'POST'])
+@agenda_bp.route('/verificar-disponibilidade')
 @login_required
-def nova_reserva():
-    if request.method == 'POST':
-        cliente_id = request.form.get('cliente_id')
-        data_reserva = datetime.strptime(request.form.get('data'), '%Y-%m-%d').date()
-        hora_inicio = datetime.strptime(request.form.get('hora_inicio'), '%H:%M').time()
-        hora_fim = datetime.strptime(request.form.get('hora_fim'), '%H:%M').time()
-        observacoes = request.form.get('observacoes')
+def verificar_disponibilidade():
+    data_str = request.args.get('data')
+    inicio_str = request.args.get('inicio')
+    fim_str = request.args.get('fim')
+    if not all([data_str, inicio_str, fim_str]):
+        return jsonify({'disponivel': False})
+    data = datetime.strptime(data_str, '%Y-%m-%d').date()
+    h_ini = datetime.strptime(inicio_str, '%H:%M').time()
+    h_fim = datetime.strptime(fim_str, '%H:%M').time()
+    conflito = Reserva.query.filter(Reserva.data == data, Reserva.status != 'cancelada',
+                                    Reserva.hora_inicio < h_fim, Reserva.hora_fim > h_ini).first()
+    return jsonify({'disponivel': conflito is None})
 
-        # Validar se o horário de início é antes do fim
-        if hora_inicio >= hora_fim:
-            flash('O horário de início deve ser anterior ao horário de término.', 'danger')
-            return redirect(url_for('agenda.nova_reserva'))
+@agenda_bp.route('/<int:reserva_id>/iniciar', methods=['POST'])
+@login_required
+def iniciar(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+    reserva.status = 'em andamento'
+    db.session.commit()
+    flash('Partida iniciada!', 'success')
+    return redirect(url_for('agenda.index', data=reserva.data.strftime('%Y-%m-%d')))
 
-        # Executar validação de conflitos
-        tem_conflito, mensagem = verificar_conflito(data_reserva, hora_inicio, hora_fim)
-        
-        if tem_conflito:
-            flash(mensagem, 'danger')
-            return redirect(url_for('agenda.nova_reserva'))
+@agenda_bp.route('/<int:reserva_id>/finalizar', methods=['POST'])
+@login_required
+def finalizar(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+    reserva.status = 'finalizada'
+    db.session.commit()
+    flash('Partida finalizada!', 'success')
+    return redirect(url_for('agenda.index', data=reserva.data.strftime('%Y-%m-%d')))
 
-        # Criar a reserva
-        nova = Reserva(
-            cliente_id=cliente_id,
-            data=data_reserva,
-            hora_inicio=hora_inicio,
-            hora_fim=hora_fim,
-            tipo='avulso',
-            observacoes=observacoes
-        )
-        
-        try:
-            db.session.add(nova)
-            db.session.commit()
-            flash('Reserva realizada com sucesso!', 'success')
-            return redirect(url_for('agenda.index', data=data_reserva))
-        except Exception as e:
-            db.session.rollback()
-            flash('Erro ao salvar reserva. Tente novamente.', 'danger')
+@agenda_bp.route('/<int:reserva_id>/cancelar', methods=['POST'])
+@login_required
+def cancelar(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+    reserva.status = 'cancelada'
+    db.session.commit()
+    flash('Reserva cancelada.', 'success')
+    return redirect(url_for('agenda.index', data=reserva.data.strftime('%Y-%m-%d')))
 
-    clientes = Cliente.query.order_by(Cliente.nome).all()
-    return render_template('agenda/nova_reserva.html', clientes=clientes)
+# --- NOVA ROTA: RECEBER PAGAMENTO PENDENTE ---
+@agenda_bp.route('/<int:reserva_id>/cobrar', methods=['POST'])
+@login_required
+def cobrar(reserva_id):
+    reserva = Reserva.query.get_or_404(reserva_id)
+    if reserva.pagamento:
+        reserva.pagamento.status = 'pago'
+        db.session.commit()
+        flash('Pagamento recebido e registrado no Financeiro!', 'success')
+    return redirect(url_for('agenda.index', data=reserva.data.strftime('%Y-%m-%d')))

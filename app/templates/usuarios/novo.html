@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Novo Funcionário — Arena Palhete{% endblock %}
+
+{% block header %}
+<header class="bg-white flex items-center w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200 gap-4">
+    <a href="/usuarios/" class="text-[#8b0000] p-2 hover:bg-zinc-100 rounded-lg transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1 class="font-['Lexend'] text-lg font-bold text-[#8b0000]">Novo Funcionário</h1>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="py-4 max-w-lg mx-auto px-4 mt-16">
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
+        <form method="POST" class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Nome Completo</label>
+                <input type="text" name="nome" placeholder="Ex: Carlos Silva" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none"/>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Email (Usado para Login)</label>
+                <input type="email" name="email" placeholder="Ex: carlos@palhete.com" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none"/>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Senha de Acesso</label>
+                <input type="password" name="senha" placeholder="Crie uma senha segura" required class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none"/>
+            </div>
+            
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-[10px] font-bold text-zinc-700 uppercase tracking-widest">Nível de Acesso no Sistema</label>
+                <select name="perfil" class="w-full border border-zinc-300 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-[#8b0000] focus:outline-none">
+                    <option value="funcionario">Funcionário (Acesso à Agenda e Mensalistas)</option>
+                    <option value="gerente">Gerente (Acesso Total, incluindo Financeiro)</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="w-full bg-[#8b0000] text-white py-4 mt-4 rounded-xl font-['Lexend'] font-bold text-sm hover:bg-red-800 transition-colors shadow-sm flex justify-center items-center gap-2">
+                <span class="material-symbols-outlined text-[18px]">how_to_reg</span>
+                CADASTRAR FUNCIONÁRIO
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

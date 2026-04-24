@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Editar Mensalista — Arena Palhete{% endblock %}
+
+{% block header %}
+<header class="bg-white flex items-center w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200 gap-4">
+    <a href="/clientes/{{ contrato.cliente_id }}" class="text-primary p-2 hover:bg-zinc-100 rounded-lg transition-colors">
+        <span class="material-symbols-outlined">arrow_back</span>
+    </a>
+    <h1 class="font-['Lexend'] text-lg font-bold text-primary-container">Editar Contrato</h1>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="py-4 max-w-lg mx-auto px-4 mt-16">
+    <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
+        <h2 class="font-['Lexend'] text-lg font-semibold text-zinc-800 mb-4 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary-container">edit_calendar</span>
+            Ajustar Horário de {{ contrato.cliente.nome }}
+        </h2>
+
+        <form method="POST" class="flex flex-col gap-4">
+            
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase">Frequência</label>
+                <select name="frequencia" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container">
+                    <option value="mensalista" {% if contrato.frequencia == 'mensalista' %}selected{% endif %}>Mensalista (Toda Semana)</option>
+                    <option value="quinzenalista" {% if contrato.frequencia == 'quinzenalista' %}selected{% endif %}>Quinzenalista (A cada 15 dias)</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase">Plano / Quadra</label>
+                <select name="plano_id" id="plano_id" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container">
+                    {% for plano in planos %}
+                    <option value="{{ plano.id }}" data-minutos="{{ plano.duracao_minutos }}" {% if contrato.plano_id == plano.id %}selected{% endif %}>
+                        {{ plano.nome }} ({{ plano.duracao_minutos }} min)
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase">Dia da Semana</label>
+                <select name="dia_semana" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container">
+                    <option value="0" {% if contrato.dia_semana == 0 %}selected{% endif %}>Segunda-feira</option>
+                    <option value="1" {% if contrato.dia_semana == 1 %}selected{% endif %}>Terça-feira</option>
+                    <option value="2" {% if contrato.dia_semana == 2 %}selected{% endif %}>Quarta-feira</option>
+                    <option value="3" {% if contrato.dia_semana == 3 %}selected{% endif %}>Quinta-feira</option>
+                    <option value="4" {% if contrato.dia_semana == 4 %}selected{% endif %}>Sexta-feira</option>
+                    <option value="5" {% if contrato.dia_semana == 5 %}selected{% endif %}>Sábado</option>
+                    <option value="6" {% if contrato.dia_semana == 6 %}selected{% endif %}>Domingo</option>
+                </select>
+            </div>
+
+            <div class="flex gap-3">
+                <div class="flex-1 flex flex-col gap-1">
+                    <label class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase">Início</label>
+                    <input type="time" name="hora_inicio" id="hora-inicio" value="{{ contrato.hora_inicio.strftime('%H:%M') }}" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:border-primary-container" onchange="calcularHoraFim()"/>
+                </div>
+                <div class="flex-1 flex flex-col gap-1">
+                    <label class="font-['Lexend'] text-xs font-bold text-zinc-500 uppercase">Fim</label>
+                    <input type="time" name="hora_fim" id="hora-fim" value="{{ contrato.hora_fim.strftime('%H:%M') }}" class="w-full border border-zinc-200 bg-zinc-100 rounded-lg px-3 py-3 font-['Lexend'] text-sm" readonly/>
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-zinc-800 text-white py-4 mt-4 rounded-xl font-['Lexend'] font-bold text-sm hover:bg-black transition-colors">
+                SALVAR ALTERAÇÕES
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function calcularHoraFim() {
+        const selectPlano = document.getElementById('plano_id');
+        const horaInicio = document.getElementById('hora-inicio').value;
+        if (!horaInicio) return;
+
+        const opcaoSelecionada = selectPlano.options[selectPlano.selectedIndex];
+        const minutosPlano = parseInt(opcaoSelecionada.getAttribute('data-minutos') || 0);
+
+        if (minutosPlano > 0) {
+            const [h, m] = horaInicio.split(':').map(Number);
+            const data = new Date();
+            data.setHours(h, m, 0);
+            data.setMinutes(data.getMinutes() + minutosPlano);
+
+            const hh = String(data.getHours()).padStart(2, '0');
+            const mm = String(data.getMinutes()).padStart(2, '0');
+            document.getElementById('hora-fim').value = `${hh}:${mm}`;
+        }
+    }
+    document.getElementById('plano_id').addEventListener('change', calcularHoraFim);
+</script>
+{% endblock %}

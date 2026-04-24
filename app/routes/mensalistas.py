@@ -1,134 +1,80 @@
-from datetime import date
 from flask import Blueprint, render_template, request, redirect, url_for, flash
-from flask_login import login_required, current_user
-from app.models import db, Cliente, ContratoMensalista, PlanoMensalista, Pagamento, Reserva
-import datetime as dt
+from flask_login import login_required
+from app.models import db, ContratoMensalista, Cliente, Pagamento, PlanoMensalista
+from datetime import datetime
 
 mensalistas_bp = Blueprint('mensalistas', __name__, url_prefix='/mensalistas')
-
-DIAS_SEMANA = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo']
-
 
 @mensalistas_bp.route('/')
 @login_required
 def index():
     filtro = request.args.get('filtro', 'todos')
-    hoje = date.today()
+    hoje = datetime.now()
     mes, ano = hoje.month, hoje.year
 
-    contratos = ContratoMensalista.query.filter_by(status='ativo').all()
+    contratos = ContratoMensalista.query.filter(
+        ContratoMensalista.cliente_id.isnot(None), 
+        ContratoMensalista.status == 'ativo'
+    ).all()
 
     resultado = []
     for c in contratos:
-        pgto = c.mensalidade_mes(mes, ano)
-        status_pgto = pgto.status if pgto else 'pendente'
-        if filtro == 'ativos' or filtro == 'todos':
-            resultado.append({'contrato': c, 'status_pgto': status_pgto})
-        elif filtro == 'pendentes' and status_pgto == 'pendente':
-            resultado.append({'contrato': c, 'status_pgto': status_pgto})
+        pagamento = c.mensalidade_mes(mes, ano)
+        status_pgto = 'pago' if pagamento and pagamento.status == 'pago' else 'pendente'
+        
+        if filtro == 'ativos' and status_pgto != 'pago': continue
+        if filtro == 'pendentes' and status_pgto != 'pendente': continue
+            
+        resultado.append({'contrato': c, 'status_pgto': status_pgto})
 
-    if filtro == 'ativos':
-        resultado = [r for r in resultado]
-
-    return render_template('mensalistas/index.html',
-                           resultado=resultado,
-                           filtro=filtro,
-                           dias_semana=DIAS_SEMANA,
-                           mes=mes, ano=ano)
-
-
-@mensalistas_bp.route('/novo', methods=['GET', 'POST'])
-@login_required
-def novo():
-    planos = PlanoMensalista.query.all()
-    if request.method == 'POST':
-        cliente_id = request.form.get('cliente_id', type=int)
-        plano_id = request.form.get('plano_id', type=int)
-        dia_semana = request.form.get('dia_semana', type=int)
-        hora_inicio_str = request.form.get('hora_inicio')
-
-        try:
-            h, m = map(int, hora_inicio_str.split(':'))
-            hora_inicio = dt.time(h, m)
-        except Exception:
-            flash('Horário inválido.', 'error')
-            return render_template('mensalistas/novo.html', planos=planos, dias_semana=DIAS_SEMANA)
-
-        # Verifica conflito de horário no dia da semana
-        plano = PlanoMensalista.query.get(plano_id)
-        hora_fim = (dt.datetime.combine(date.today(), hora_inicio) +
-                    dt.timedelta(minutes=plano.duracao_minutos)).time()
-
-        conflito = ContratoMensalista.query.filter_by(
-            dia_semana=dia_semana, status='ativo'
-        ).filter(
-            ContratoMensalista.hora_inicio < hora_fim,
-        ).first()
-
-        if conflito:
-            flash(f'Horário conflita com contrato de {conflito.cliente.nome}.', 'error')
-            return render_template('mensalistas/novo.html', planos=planos, dias_semana=DIAS_SEMANA)
-
-        # Atualiza tipo do cliente
-        cliente = Cliente.query.get_or_404(cliente_id)
-        cliente.tipo = 'mensalista'
-
-        contrato = ContratoMensalista(
-            cliente_id=cliente_id,
-            plano_id=plano_id,
-            dia_semana=dia_semana,
-            hora_inicio=hora_inicio,
-            data_inicio=date.today(),
-        )
-        db.session.add(contrato)
-        db.session.commit()
-
-        flash(f'Mensalista {cliente.nome} cadastrado com sucesso!', 'success')
-        return redirect(url_for('mensalistas.index'))
-
-    return render_template('mensalistas/novo.html', planos=planos, dias_semana=DIAS_SEMANA)
-
+    return render_template('mensalistas/index.html', resultado=resultado, filtro=filtro, mes=mes, ano=ano)
 
 @mensalistas_bp.route('/cobrar/<int:contrato_id>', methods=['POST'])
 @login_required
 def cobrar(contrato_id):
     contrato = ContratoMensalista.query.get_or_404(contrato_id)
-    hoje = date.today()
-    mes, ano = hoje.month, hoje.year
-    mes_ref = f'{ano}-{mes:02d}'
-    forma = request.form.get('forma', 'dinheiro')
-
-    pgto_existente = contrato.mensalidade_mes(mes, ano)
-    if pgto_existente:
-        pgto_existente.status = 'pago'
-        pgto_existente.forma = forma
-    else:
-        pgto = Pagamento(
-            cliente_id=contrato.cliente_id,
-            contrato_id=contrato_id,
-            tipo='mensalidade',
-            valor=contrato.plano.valor_mensal,
-            forma=forma,
-            status='pago',
-            mes_referencia=mes_ref,
-        )
-        db.session.add(pgto)
-
+    hoje = datetime.now()
+    pagamento = Pagamento(cliente_id=contrato.cliente_id, contrato_id=contrato.id, tipo='mensalidade',
+                          valor=contrato.plano.valor_mensal, forma='pix', status='pago',
+                          mes_referencia=f"{hoje.year}-{hoje.month:02d}")
+    db.session.add(pagamento)
     db.session.commit()
-    flash(f'Mensalidade de {contrato.cliente.nome} registrada como paga.', 'success')
-    return redirect(request.referrer or url_for('mensalistas.index'))
-
-
-@mensalistas_bp.route('/inativar/<int:contrato_id>', methods=['POST'])
-@login_required
-def inativar(contrato_id):
-    if not current_user.is_gerente():
-        flash('Acesso restrito ao gerente.', 'error')
-        return redirect(url_for('mensalistas.index'))
-    contrato = ContratoMensalista.query.get_or_404(contrato_id)
-    contrato.status = 'inativo'
-    contrato.data_fim = date.today()
-    contrato.cliente.tipo = 'avulso'
-    db.session.commit()
-    flash('Contrato encerrado.', 'info')
+    flash(f'Pagamento de {contrato.cliente.nome} registrado!', 'success')
     return redirect(url_for('mensalistas.index'))
+
+# --- NOVAS ROTAS DE MANUTENÇÃO ---
+
+@mensalistas_bp.route('/<int:contrato_id>/editar', methods=['GET', 'POST'])
+@login_required
+def editar(contrato_id):
+    contrato = ContratoMensalista.query.get_or_404(contrato_id)
+    planos = PlanoMensalista.query.all()
+
+    if request.method == 'POST':
+        contrato.plano_id = request.form.get('plano_id')
+        contrato.frequencia = request.form.get('frequencia')
+        contrato.dia_semana = request.form.get('dia_semana')
+        hora_inicio_str = request.form.get('hora_inicio')
+        hora_fim_str = request.form.get('hora_fim')
+
+        if hora_inicio_str and hora_fim_str:
+            contrato.hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
+            contrato.hora_fim = datetime.strptime(hora_fim_str, '%H:%M').time()
+
+        db.session.commit()
+        flash('Contrato atualizado com sucesso!', 'success')
+        # Volta para a ficha do cliente usando a nossa rota blindada
+        return redirect(f"/clientes/{contrato.cliente_id}")
+
+    return render_template('mensalistas/editar.html', contrato=contrato, planos=planos)
+
+
+@mensalistas_bp.route('/<int:contrato_id>/cancelar', methods=['POST'])
+@login_required
+def cancelar(contrato_id):
+    contrato = ContratoMensalista.query.get_or_404(contrato_id)
+    # Regra de Ouro: Nunca deletar. Apenas mudar o status para liberar a agenda!
+    contrato.status = 'cancelado' 
+    db.session.commit()
+    flash('Plano cancelado com sucesso. A quadra foi liberada.', 'success')
+    return redirect(f"/clientes/{contrato.cliente_id}")

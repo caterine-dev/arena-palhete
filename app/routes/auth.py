@@ -18,18 +18,23 @@ def login():
         return redirect(url_for('agenda.index'))
 
     if request.method == 'POST':
-        email = request.form.get('email', '').strip()
+        # Pegamos o valor do input (que no HTML ainda tem o name="email")
+        acesso_digitado = request.form.get('email', '').strip()
         senha = request.form.get('senha', '')
         lembrar = request.form.get('lembrar') == 'on'
 
-        usuario = Usuario.query.filter_by(email=email, ativo=True).first()
+        # Busca o usuário pelo e-mail OU pelo nome, desde que esteja ativo
+        usuario = Usuario.query.filter(
+            ((Usuario.email == acesso_digitado) | (Usuario.nome == acesso_digitado)),
+            Usuario.ativo == True
+        ).first()
 
         if usuario and usuario.check_senha(senha):
             login_user(usuario, remember=lembrar)
             next_page = request.args.get('next')
             return redirect(next_page or url_for('agenda.index'))
         else:
-            flash('E-mail ou senha incorretos.', 'error')
+            flash('E-mail, usuário ou senha incorretos.', 'error')
 
     return render_template('auth/login.html')
 

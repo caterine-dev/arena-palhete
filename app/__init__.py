@@ -29,17 +29,21 @@ def create_app(config_name='default'):
         from datetime import date
         return dict(enumerate=enumerate, hoje_iso=date.today().isoformat())
 
-    # Blueprints
+    # Blueprints Consolidados
     from app.routes.auth import auth_bp
     from app.routes.agenda import agenda_bp
     from app.routes.clientes import clientes_bp
     from app.routes.mensalistas import mensalistas_bp
     from app.routes.financeiro import financeiro_bp
+    from app.routes.ajustes import ajustes_bp
+    from app.routes.usuarios import usuarios_bp  # <--- Nova Rota de Equipe
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(agenda_bp)
     app.register_blueprint(clientes_bp)
     app.register_blueprint(mensalistas_bp)
     app.register_blueprint(financeiro_bp)
+    app.register_blueprint(ajustes_bp)
+    app.register_blueprint(usuarios_bp)          # <--- Registrado
 
     return app

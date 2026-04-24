@@ -1,147 +1,73 @@
 {% extends "base.html" %}
-{% block title %}Novo Mensalista — Arena Palhete{% endblock %}
-
-{% block header %}
-<header class="bg-white flex items-center w-full px-4 py-4 fixed top-0 z-50 border-b border-zinc-200 gap-4">
-    <a href="{{ url_for('mensalistas.index') }}" class="text-primary p-2 hover:bg-zinc-100 rounded-lg transition-colors">
-        <span class="material-symbols-outlined">arrow_back</span>
-    </a>
-    <h1 class="font-['Lexend'] text-lg font-bold text-primary-container">Novo Mensalista</h1>
-</header>
-{% endblock %}
-
 {% block content %}
-<div class="py-4 max-w-lg mx-auto flex flex-col gap-5">
-    <form method="POST" class="flex flex-col gap-5">
+<div class="container mt-4">
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">Novo Contrato de Mensalista</h4>
+        </div>
+        <div class="card-body">
+            <form method="POST" action="{{ url_for('mensalistas.novo') }}">
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="cliente_id" class="form-label">Cliente Responsável</label>
+                        <select class="form-select" id="cliente_id" name="cliente_id" required>
+                            <option value="">Selecione um cliente...</option>
+                            {% for c in clientes %}
+                                <option value="{{ c.id }}">{{ c.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <label for="plano_id" class="form-label">Plano de Locação</label>
+                        <select class="form-select" id="plano_id" name="plano_id" required>
+                            <option value="">Selecione um plano...</option>
+                            {% for p in planos %}
+                                <option value="{{ p.id }}">{{ p.nome }} ({{ p.duracao_minutos }} min) - R$ {{ "%.2f"|format(p.valor_mensal) }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
 
-        <!-- Cliente -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-base font-semibold text-on-surface mb-4 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary-container text-[20px]">person</span>
-                Cliente
-            </h2>
-            <div class="relative mb-2">
-                <span class="material-symbols-outlined absolute left-3 top-3 text-zinc-400 text-[18px]">search</span>
-                <input id="busca-cliente" type="text" placeholder="Buscar por nome ou telefone"
-                       class="w-full pl-10 pr-4 py-3 border border-zinc-200 rounded-lg font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"
-                       autocomplete="off"/>
-            </div>
-            <div id="resultados-busca" class="hidden flex-col gap-2 mb-3"></div>
-            <div id="cliente-selecionado" class="hidden">
-                <div class="flex items-center gap-3 border-2 border-primary-container rounded-xl p-3 bg-red-50/30">
-                    <div class="bg-primary-container w-9 h-9 rounded-lg flex items-center justify-center">
-                        <span class="material-symbols-outlined text-white text-[18px]">person</span>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="dia_semana" class="form-label">Dia da Semana Fixo</label>
+                        <select class="form-select" id="dia_semana" name="dia_semana" required>
+                            <option value="">Escolha o dia...</option>
+                            <option value="0">Segunda-feira</option>
+                            <option value="1">Terça-feira</option>
+                            <option value="2">Quarta-feira</option>
+                            <option value="3">Quinta-feira</option>
+                            <option value="4">Sexta-feira</option>
+                            <option value="5">Sábado</option>
+                            <option value="6">Domingo</option>
+                        </select>
                     </div>
-                    <div class="flex-1">
-                        <p id="nome-cliente-display" class="font-['Lexend'] text-sm font-semibold"></p>
-                        <p id="tel-cliente-display" class="font-['Lexend'] text-xs text-on-surface-variant"></p>
+
+                    <div class="col-md-4">
+                        <label for="hora_inicio" class="form-label">Horário de Início</label>
+                        <input type="time" class="form-control" id="hora_inicio" name="hora_inicio" required>
+                        <div class="form-text text-success">
+                            <i class="bi bi-info-circle"></i> O término é calculado pelo plano.
+                        </div>
                     </div>
-                    <button type="button" onclick="limparCliente()" class="text-zinc-400 hover:text-zinc-600">
-                        <span class="material-symbols-outlined">close</span>
+
+                    <div class="col-md-4">
+                        <label for="data_inicio" class="form-label">Data de Início do Contrato</label>
+                        <input type="date" class="form-control" id="data_inicio" name="data_inicio" required>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end mt-4">
+                    <a href="{{ url_for('mensalistas.index') }}" class="btn btn-secondary me-2">Cancelar</a>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Salvar Mensalista
                     </button>
                 </div>
-            </div>
-            <input type="hidden" name="cliente_id" id="cliente_id" required/>
-            <a href="{{ url_for('clientes.novo') }}?next={{ request.url }}"
-               class="flex items-center gap-1 text-primary-container font-['Lexend'] text-xs font-semibold mt-3 hover:underline">
-                <span class="material-symbols-outlined text-[16px]">add_circle</span>
-                Cadastrar novo cliente
-            </a>
-        </div>
 
-        <!-- Plano -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-base font-semibold text-on-surface mb-4 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary-container text-[20px]">schedule</span>
-                Plano
-            </h2>
-            <div class="flex flex-col gap-2">
-                {% for plano in planos %}
-                <label class="flex items-center justify-between border border-zinc-200 rounded-xl p-4 cursor-pointer hover:border-primary-container transition-colors has-[:checked]:border-primary-container has-[:checked]:bg-red-50/30">
-                    <div class="flex items-center gap-3">
-                        <input type="radio" name="plano_id" value="{{ plano.id }}"
-                               class="text-primary-container focus:ring-primary-container" required/>
-                        <span class="font-['Lexend'] text-base font-semibold text-on-surface">{{ plano.nome }}</span>
-                        <span class="font-['Lexend'] text-xs text-on-surface-variant">{{ plano.duracao_minutos }} min/semana</span>
-                    </div>
-                    <span class="font-['Lexend'] text-sm font-semibold text-primary-container">
-                        R$ {{ '%.0f'|format(plano.valor_mensal) }}/mês
-                    </span>
-                </label>
-                {% endfor %}
-            </div>
+            </form>
         </div>
-
-        <!-- Horário fixo -->
-        <div class="bg-white rounded-xl p-5 shadow-sm border border-zinc-200">
-            <h2 class="font-['Lexend'] text-base font-semibold text-on-surface mb-4 flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary-container text-[20px]">event</span>
-                Dia e Horário Fixo
-            </h2>
-            <div class="flex flex-col gap-4">
-                <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Dia da Semana</label>
-                    <select name="dia_semana" required
-                            class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors bg-white">
-                        {% for i, dia in enumerate(dias_semana) %}
-                        <option value="{{ i }}">{{ dia }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="flex flex-col gap-1">
-                    <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Horário de Início</label>
-                    <input type="time" name="hora_inicio" required
-                           class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container transition-colors"/>
-                </div>
-            </div>
-        </div>
-
-        <button type="submit"
-                class="w-full bg-primary-container text-white py-4 rounded-xl font-['Lexend'] font-semibold text-base flex items-center justify-center gap-2 hover:bg-primary transition-colors">
-            <span class="material-symbols-outlined">check_circle</span>
-            Cadastrar Mensalista
-        </button>
-    </form>
+    </div>
 </div>
-{% endblock %}
-
-{% block extra_scripts %}
-<script>
-    const inputBusca = document.getElementById('busca-cliente');
-    const divResultados = document.getElementById('resultados-busca');
-    const divSelecionado = document.getElementById('cliente-selecionado');
-    let timeout;
-
-    inputBusca.addEventListener('input', () => {
-        clearTimeout(timeout);
-        const q = inputBusca.value.trim();
-        if (q.length < 2) { divResultados.classList.add('hidden'); return; }
-        timeout = setTimeout(async () => {
-            const res = await fetch(`/clientes/buscar?q=${encodeURIComponent(q)}`);
-            const clientes = await res.json();
-            divResultados.innerHTML = '';
-            clientes.forEach(c => {
-                const el = document.createElement('div');
-                el.className = 'flex items-center gap-3 p-3 border border-zinc-200 rounded-xl cursor-pointer hover:border-primary-container transition-colors';
-                el.innerHTML = `<div class="bg-zinc-100 w-8 h-8 rounded-lg flex items-center justify-center"><span class="material-symbols-outlined text-zinc-500 text-[16px]">person</span></div><div><p class="font-['Lexend'] text-sm font-semibold">${c.nome}</p><p class="font-['Lexend'] text-xs text-zinc-500">${c.telefone}</p></div>`;
-                el.onclick = () => {
-                    document.getElementById('cliente_id').value = c.id;
-                    document.getElementById('nome-cliente-display').textContent = c.nome;
-                    document.getElementById('tel-cliente-display').textContent = c.telefone;
-                    divSelecionado.classList.remove('hidden');
-                    divResultados.classList.add('hidden');
-                    inputBusca.value = '';
-                };
-                divResultados.appendChild(el);
-            });
-            divResultados.classList.remove('hidden');
-            divResultados.classList.add('flex');
-        }, 300);
-    });
-
-    function limparCliente() {
-        document.getElementById('cliente_id').value = '';
-        divSelecionado.classList.add('hidden');
-    }
-</script>
 {% endblock %}
