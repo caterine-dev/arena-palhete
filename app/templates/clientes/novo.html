@@ -97,11 +97,22 @@
                 <div class="flex gap-3">
                     <div class="flex-1 flex flex-col gap-1">
                         <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Hora Início</label>
-                        <input type="time" name="hora_inicio" id="hora-inicio" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container" onchange="calcularHoraFim()"/>
+                        <input type="time" name="hora_inicio" id="hora-inicio" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container bg-white" onchange="calcularHoraFim()"/>
                     </div>
                     <div class="flex-1 flex flex-col gap-1">
                         <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Hora Fim</label>
                         <input type="time" name="hora_fim" id="hora-fim" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container bg-zinc-100" readonly/>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 mt-1">
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Data Início</label>
+                        <input type="date" name="data_inicio" id="data-inicio" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container bg-white"/>
+                    </div>
+                    <div class="flex-1 flex flex-col gap-1">
+                        <label class="font-['Lexend'] text-xs font-semibold text-on-surface uppercase tracking-widest">Data Fim</label>
+                        <input type="date" name="data_fim" id="data-fim" class="w-full border border-zinc-200 rounded-lg px-3 py-3 font-['Lexend'] text-sm focus:outline-none focus:border-primary-container bg-white"/>
                     </div>
                 </div>
             </div>
@@ -122,17 +133,24 @@
     function toggleContrato() {
         const tipoSelecionado = document.querySelector('input[name="tipo"]:checked').value;
         const secaoContrato = document.getElementById('secao-contrato');
+        
         const planoId = document.getElementById('plano_id');
         const horaInicio = document.getElementById('hora-inicio');
+        const dataInicio = document.getElementById('data-inicio');
+        const dataFim = document.getElementById('data-fim');
 
         if (tipoSelecionado === 'mensalista' || tipoSelecionado === 'quinzenalista') {
             secaoContrato.classList.remove('hidden');
             planoId.required = true;
             horaInicio.required = true;
+            dataInicio.required = true;
+            dataFim.required = true;
         } else {
             secaoContrato.classList.add('hidden');
             planoId.required = false;
             horaInicio.required = false;
+            dataInicio.required = false;
+            dataFim.required = false;
         }
     }
 
