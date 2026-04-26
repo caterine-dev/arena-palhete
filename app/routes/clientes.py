@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required
 from app.models import db, Cliente, Reserva, Pagamento, PlanoMensalista, ContratoMensalista, Configuracao
@@ -38,29 +38,56 @@ def novo():
             dia_semana = request.form.get('dia_semana')
             hora_inicio_str = request.form.get('hora_inicio')
             hora_fim_str = request.form.get('hora_fim')
+            data_inicio_str = request.form.get('data_inicio')
+            data_fim_str = request.form.get('data_fim')
 
-            if not all([plano_id, dia_semana, hora_inicio_str, hora_fim_str]):
+            if not all([plano_id, dia_semana, hora_inicio_str, hora_fim_str, data_inicio_str, data_fim_str]):
                 db.session.rollback()
-                flash('Preencha todos os dados do plano.', 'error')
+                flash('Preencha todos os dados do plano e as datas de início e fim.', 'error')
                 return redirect(url_for('clientes.novo'))
 
             hora_inicio = datetime.strptime(hora_inicio_str, '%H:%M').time()
             hora_fim = datetime.strptime(hora_fim_str, '%H:%M').time()
+            dia_semana_int = int(dia_semana)
 
             contrato = ContratoMensalista(
                 cliente_id=cliente.id,
                 plano_id=plano_id,
                 frequencia=tipo,
-                dia_semana=int(dia_semana),
+                dia_semana=dia_semana_int,
                 hora_inicio=hora_inicio,
                 hora_fim=hora_fim,
                 status='ativo'
             )
             db.session.add(contrato)
 
+            # --- O MOTOR DO TEMPO ---
+            data_atual = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
+            data_final = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
+
+            # Ajusta para o primeiro dia correto da semana
+            while data_atual.weekday() != dia_semana_int:
+                data_atual += timedelta(days=1)
+
+            # Define o pulo: 7 dias para mensalista, 14 para quinzenalista
+            pulo = 14 if tipo == 'quinzenalista' else 7
+
+            while data_atual <= data_final:
+                nova_reserva = Reserva(
+                    cliente_id=cliente.id,
+                    data=data_atual,
+                    hora_inicio=hora_inicio,
+                    hora_fim=hora_fim,
+                    tipo=tipo,
+                    status='confirmada'
+                )
+                db.session.add(nova_reserva)
+                data_atual += timedelta(days=pulo)
+            # ------------------------
+
         try:
             db.session.commit()
-            flash(f'Cadastro de {nome} realizado com sucesso!', 'success')
+            flash(f'Cadastro de {nome} realizado com sucesso e agenda preenchida!', 'success')
             return redirect(url_for('agenda.index'))
         except Exception as e:
             db.session.rollback()
@@ -148,8 +175,6 @@ def nova_reserva():
         )
         db.session.add(pagamento)
         db.session.commit()
-        # (O código existente estará assim)
-        db.session.commit()
 
         # --- CHAMA O GOOGLE CALENDAR AQUI ---
         try:
@@ -159,9 +184,6 @@ def nova_reserva():
         except Exception as e:
             print(f"Erro na integração: {e}")
         # ------------------------------------
-
-        flash('Reserva criada com sucesso!', 'success')
-        return redirect(url_for('agenda.index', data=data_str))
 
         flash('Reserva criada com sucesso!', 'success')
         return redirect(url_for('agenda.index', data=data_str))
