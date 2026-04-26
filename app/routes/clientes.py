@@ -61,15 +61,13 @@ def novo():
             )
             db.session.add(contrato)
 
-            # --- O MOTOR DO TEMPO ---
+            # --- MOTOR DO TEMPO COM SINCRONIZAÇÃO GOOGLE ---
             data_atual = datetime.strptime(data_inicio_str, '%Y-%m-%d').date()
             data_final = datetime.strptime(data_fim_str, '%Y-%m-%d').date()
 
-            # Ajusta para o primeiro dia correto da semana
             while data_atual.weekday() != dia_semana_int:
                 data_atual += timedelta(days=1)
 
-            # Define o pulo: 7 dias para mensalista, 14 para quinzenalista
             pulo = 14 if tipo == 'quinzenalista' else 7
 
             while data_atual <= data_final:
@@ -82,12 +80,19 @@ def novo():
                     status='confirmada'
                 )
                 db.session.add(nova_reserva)
+                
+                # NOVO: Envia para o Google Agenda individualmente
+                try:
+                    criar_evento(nova_reserva, nome)
+                except Exception as e:
+                    print(f"Erro ao sincronizar reserva recorrente: {e}")
+                
                 data_atual += timedelta(days=pulo)
-            # ------------------------
+            # -----------------------------------------------
 
         try:
             db.session.commit()
-            flash(f'Cadastro de {nome} realizado com sucesso e agenda preenchida!', 'success')
+            flash(f'Cadastro de {nome} realizado com sucesso! Agenda e Google sincronizados.', 'success')
             return redirect(url_for('agenda.index'))
         except Exception as e:
             db.session.rollback()
@@ -176,14 +181,11 @@ def nova_reserva():
         db.session.add(pagamento)
         db.session.commit()
 
-        # --- CHAMA O GOOGLE CALENDAR AQUI ---
         try:
-            # Puxa o nome do cliente para ficar bonito no título do evento
             cliente_nome = Cliente.query.get(cliente_id).nome
             criar_evento(reserva, cliente_nome)
         except Exception as e:
             print(f"Erro na integração: {e}")
-        # ------------------------------------
 
         flash('Reserva criada com sucesso!', 'success')
         return redirect(url_for('agenda.index', data=data_str))
@@ -191,7 +193,6 @@ def nova_reserva():
     cliente_id = request.args.get('cliente_id', type=int)
     cliente = Cliente.query.get(cliente_id) if cliente_id else None
     
-    # 🔴 AQUI É ONDE PUXAMOS OS VALORES REAIS DO PAINEL DE AJUSTES
     configs = {
         'valor_1h': Configuracao.get('valor_avulso_1h', '150.00'),
         'valor_1h30': Configuracao.get('valor_avulso_1h30', '200.00'),
